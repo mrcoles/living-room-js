@@ -21,15 +21,21 @@ export default class Room {
   }
 
   subscribe(facts) {
-    const subscriptionName = facts.toString();
-    if (this._sockets.has(subscriptionName)) {
-      return this._sockets.get(subscriptionName);
+    // TODO - when is this used and how about this rewrite?
+    const key = facts.toString();
+    if (this._sockets.has(key)) {
+      return this._sockets.get(key);
     }
 
+    const sub = this._subscribe(facts);
+    this._sockets.set(key, sub);
+    return sub;
+  }
+
+  _subscribe(facts) {
     const socket = io.connect(this.uri);
     socket.emit('updateSubscription', facts);
 
-    this._sockets.set(subscriptionName, socket);
     return {
       on(callback) {
         socket.on('subscriptionFacts', callback);
@@ -59,6 +65,8 @@ export default class Room {
   }
 
   select(facts) {
+    // TODO - should `.select(...)`, `.assert(...)`, and `.retract(...)` return
+    // something other than this?
     this._data = { facts };
     this._endpoint = 'select';
     return this;
@@ -72,6 +80,7 @@ export default class Room {
         const { solutions } = json;
         solutions.forEach(callbackFn);
       });
+    // TODO - should do return `this` or are we trying to prevent duplicating requests?
   }
 
   assert(fact) {
